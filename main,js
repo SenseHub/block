@@ -1,0 +1,156 @@
+"use strict";
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let x = canvas.width / 2;
+let y = canvas.height - 30;
+let dx = -3;
+let dy = -3;
+const ballRad = 8;
+const stickHeight = 10;
+const stickWidth = 55;
+let stickX = (canvas.width - stickWidth) / 2;
+let rightPushed = false;
+let leftPushed = false;
+const blockRow = 3;
+const blockColumn = 5;
+const blockHeight = 20;
+const blockWidth = 75;
+const blockPadding = 10;
+const blockOffsetTop = 30;
+const blockOffsetleft = 30;
+let score = 0;
+
+let blocks = [];
+for (let c = 0; c < blockColumn; c++) {
+    blocks[c] = [];
+    for (let r = 0; r < blockRow; r++) {
+        blocks[c][r] = { x : 0, y : 0, status : 1 };
+    }
+}
+
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
+document.addEventListener("mousemove", mouseMoveHandler, false);
+
+function mouseMoveHandler(e) {
+    const relativeX = e.clientX - canvas.offsetLeft;
+    if (relativeX > 0 && relativeX < canvas.width) {
+        stickX = relativeX - stickWidth / 2;
+    }
+}
+
+// 操作キーの定義
+function keyDownHandler(e) {
+    if (e.key == "Right" || e.key == "ArrowRight") {
+        rightPushed = true;
+    } else if (e.key == "Left" || e.key == "ArrowLeft") {
+        leftPushed = true;
+    }
+}
+function keyUpHandler(e) {
+    if (e.key == "Right" || e.key == "ArrowRight") {
+        rightPushed = false;
+    } else if (e.key == "Left" || e.key == "ArrowLeft") {
+        leftPushed = false;
+    }
+}
+
+function conflict() {
+    for (let c = 0; c < blockColumn; c++) {
+        for (let r = 0; r < blockRow; r++) {
+            const b = blocks[c][r];
+            if (b.status == 1) {
+                if (x > b.x && x < b.x + blockWidth && y > b.y && y < b.y + blockHeight) {
+                    dy = -dy;
+                    b.status = 0;
+                    score++;
+                    if (score == blockRow * blockColumn) {
+                        alert("Congratulation!!");
+                        document.location.reload;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function drawscore() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#0095DD";
+    ctx.fillText("SCORE: " + score, 8, 20);
+}
+
+// ボールのスタイル
+function drawBall() {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRad, 0, Math.PI*2);
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.closePath();
+}
+
+// 操作バーのスタイル
+function drawStick() {
+    ctx.beginPath();
+    ctx.rect(stickX, canvas.height - stickHeight, stickWidth, stickHeight);
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.closePath();
+}
+
+// 壊すブロックのスタイル
+function drawBlock() {
+    for (let c = 0; c < blockColumn; c++) {
+        for (let r = 0; r < blockRow; r++) {
+            if (blocks[c][r].status == 1) {
+                let blockX = (c * (blockPadding + blockWidth)) + blockOffsetleft;
+                let blockY = (r * (blockPadding + blockHeight)) + blockOffsetTop;
+                blocks[c][r].x = blockX;
+                blocks[c][r].y = blockY;
+                ctx.beginPath();
+                ctx.rect(blockX, blockY, blockWidth, blockHeight);
+                ctx.fillStyle = "#0095DD";
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+    }
+}
+
+// まとめ
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBlock();
+    drawStick();
+    conflict();
+    drawBall();
+    drawscore();
+    
+    if (x + dx > canvas.width - ballRad || x + dx < ballRad) {
+        dx = -dx;
+    }
+    if (y + dy < ballRad) {
+        dy = -dy;
+    } else if (y + dy > canvas.height - ballRad) {
+        if (x > stickX && x < stickX + stickWidth) {
+            dy = -dy;
+        } else {
+            alert("GAME OVER!");
+            document.location.reload();
+            clearInterval(interval);
+        }
+    }
+    
+    if (rightPushed && stickX < canvas.width - stickWidth) {
+        stickX += 7;
+    } else if (leftPushed && stickX > 0) {
+        stickX -= 7;
+    }
+
+    x += dx;
+    y += dy;
+}
+
+
+const interval = setInterval(draw, 10);
